@@ -46,6 +46,14 @@ class BulkParser(object):
     """
     def parse(self, text):
         """Parse given text and return list of data dictionaries."""
+
+        # determine the bulk format, and call the right parse method
+
+
+
+    def parse_markdown(self, text):
+
+    def parse_gherkin(self, text):
         data = []
         state = self.begin
 
