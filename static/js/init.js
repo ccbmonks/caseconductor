@@ -28,12 +28,12 @@ var CC = (function (CC, $) {
     $(function () {
         // plugins
         $('.details:not(html)').html5accordion();
-        $('#messages').messages({
+        $('#messages ul').messages({
             handleAjax: true,
             closeLink: '.message'
         });
         $('input[placeholder], textarea[placeholder]').placeholder();
-        // $('#suite-form .caseselect').multiselect();
+        $('.multiselect').multiselect();
         $('#filter').customAutocomplete({
             textbox: '#text-filter',
             inputList: '.visual .filter-group:not(.keyword)',
@@ -42,6 +42,19 @@ var CC = (function (CC, $) {
             allowNew: true,
             autoSubmit: true,
             newInputTextbox: 'input[type="text"]',
+            fakePlaceholder: true,
+            initialFocus: true,
+            inputsNeverRemoved: true,
+            prefix: 'filter'
+        });
+        $('#clientfilter').customAutocomplete({
+            textbox: '#text-filter',
+            inputList: '.visual .filter-group:not(.keyword)',
+            newInputList: '.visual .filter-group.keyword',
+            multipleCategories: true,
+            allowNew: true,
+            newInputTextbox: 'input[type="text"]',
+            triggerSubmit: null,
             fakePlaceholder: true,
             initialFocus: true,
             inputsNeverRemoved: true,
@@ -72,27 +85,26 @@ var CC = (function (CC, $) {
             noInputsNote: true,
             prefix: 'tag'
         });
-        // $('#editprofile .add-item').customAutocomplete({
-        //     textbox: '#env-elements-input',
-        //     inputList: '.env-element-list',
-        //     ajax: true,
-        //     url: $('#env-elements-input').data('autocomplete-url'),
-        //     hideFormActions: true,
-        //     expiredList: '.env-element-list',
-        //     inputType: 'element',
-        //     caseSensitive: true,
-        //     prefix: 'element'
-        // });
-        // $('#suite-form .caseselect .multiunselected .selectsearch').customAutocomplete({
-        //     textbox: '#search-add',
-        //     inputList: '.groups .filter-group:not(.keyword)',
-        //     newInputList: '.groups .filter-group.keyword',
-        //     multipleCategories: true,
-        //     allowNew: true,
-        //     triggerSubmit: null,
-        //     inputsNeverRemoved: true,
-        //     prefix: 'filter'
-        // });
+        $('#editprofile .add-item, #editproductversionenvs .add-item').customAutocomplete({
+            textbox: '#env-elements-input',
+            inputList: '.env-element-list',
+            ajax: true,
+            url: $('#env-elements-input').data('autocomplete-url'),
+            hideFormActions: true,
+            inputType: 'element',
+            caseSensitive: true,
+            prefix: 'element'
+        });
+        $('.multiselect .multiunselected .selectsearch').customAutocomplete({
+            textbox: '#search-add',
+            inputList: '.visual .filter-group:not(.keyword)',
+            newInputList: '.visual .filter-group.keyword',
+            multipleCategories: true,
+            allowNew: true,
+            triggerSubmit: null,
+            inputsNeverRemoved: true,
+            prefix: 'filter'
+        });
         $('.runsdrill').html5finder({
             loading: true,
             headerSelector: '.listordering',
@@ -121,15 +133,15 @@ var CC = (function (CC, $) {
             sectionContentSelector: '.colcontent',
             numberCols: 4
         });
-        // $('.resultsdrill').html5finder({
-        //     loading: true,
-        //     horizontalScroll: true,
-        //     scrollContainer: '.finder',
-        //     headerSelector: '.listordering',
-        //     sectionSelector: '.col',
-        //     sectionContentSelector: '.colcontent',
-        //     numberCols: 4
-        // });
+        $('.resultsdrill').html5finder({
+            loading: true,
+            horizontalScroll: true,
+            scrollContainer: '.finder',
+            headerSelector: '.listordering',
+            sectionSelector: '.col',
+            sectionContentSelector: '.colcontent',
+            numberCols: 4
+        });
 
         // local.js
         CC.inputHadFocus();
@@ -139,62 +151,61 @@ var CC = (function (CC, $) {
 
         // listpages.js
         CC.loadListItemDetails();
-        CC.manageActionsAjax();
+        CC.manageActionsAjax('.manage, .manage-form');
         CC.listActionAjax(
             '.manage, .results',
             '.listordering .sortlink, .pagination .prev, .pagination .next, .pagination .page, .perpage a'
         );
 
         // filtering.js
-        CC.toggleAdvancedFiltering('#filter');
+        CC.toggleAdvancedFiltering('.magicfilter');
         CC.directFilterLinks();
         CC.filterFormAjax('.manage, .results');
+        CC.clientSideFilter({container: '#envnarrowing'});
 
         // manage-products.js
-        // CC.formOptionsFilter({
-        //     container: '#addsuite',
-        //     trigger_sel: '#id_product',
-        //     target_sel: '.multiunselected .select',
-        //     option_sel: '.selectitem',
-        //     multiselect_widget_bool: true
-        // });
-        // CC.formOptionsFilter({
-        //     container: '#addrun',
-        //     trigger_sel: '#id_productversion',
-        //     target_sel: '#id_suites'
-        // });
         CC.formOptionsFilter({
-            container: '#single-case-add',
+            container: '#suite-add-form, #suite-edit-form',
+            trigger_sel: '#id_product',
+            target_sel: '.multiunselected .select',
+            option_sel: '.selectitem',
+            multiselect_widget_bool: true
+        });
+        CC.formOptionsFilter({
+            container: '#run-add-form, #run-edit-form',
+            trigger_sel: '#id_productversion',
+            target_sel: '.multiunselected .select',
+            option_sel: '.selectitem',
+            multiselect_widget_bool: true
+        });
+        CC.formOptionsFilter({
+            container: '#single-case-add, #bulk-case-add',
             trigger_sel: '#id_product',
             target_sel: '#id_productversion'
         });
         CC.formOptionsFilter({
-            container: '#single-case-add',
+            container: '#single-case-add, #bulk-case-add',
             trigger_sel: '#id_product',
             target_sel: '#id_initial_suite',
             optional: true
         });
         CC.formOptionsFilter({
-            container: '#bulk-case-add',
+            container: '#productversion-add-form',
             trigger_sel: '#id_product',
-            target_sel: '#id_productversion'
-        });
-        CC.formOptionsFilter({
-            container: '#bulk-case-add',
-            trigger_sel: '#id_product',
-            target_sel: '#id_initial_suite',
-            optional: true
+            target_sel: '#id_clone_envs_from',
+            optional: true,
+            callback: function (context) {
+                context.find('#id_clone_envs_from option:last-child').prop('selected', true);
+            }
         });
         CC.filterProductTags('#single-case-add, #bulk-case-add');
         CC.testcaseAttachments('.case-form .attach');
 
         // manage-env.js
-        // CC.createEnvProfile();
-        // CC.editEnvProfile();
-        // CC.envNarrowing('#envnarrowlist');
-
-        // manage-tags.js
-        // CC.manageTags('#managetags');
+        CC.createEnvProfile('#profile-add-form');
+        CC.addEnvToProfile('#editprofile, #editproductversionenvs');
+        CC.editEnvProfileName('#editprofile');
+        CC.bulkSelectEnvs('#envnarrowing');
 
         // runtests.js
         CC.hideEmptyRuntestsEnv();

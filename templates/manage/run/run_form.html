@@ -6,12 +6,16 @@
   {% block formtop %}{% endblock %}
   <form id="{% block formid %}{% endblock %}" method="POST" class="manage-form">
     {% csrf_token %}
+    {{ form.cc_version }}
+    {{ form.non_field_errors }}
 
     {% include "forms/_field.html" with field=form.productversion label="Product Version" %}
     {% include "forms/_field.html" with field=form.name %}
     {% include "forms/_field.html" with field=form.description %}
     {% include "forms/_field.html" with field=form.start %}
     {% include "forms/_field.html" with field=form.end %}
+
+    {% include "forms/_field.html" with field=form.suites nolabel=1 %}
 
     {% comment %}
     <section class="userselect details{% if form.team.errors or form.team.value %} open{% endif %}">

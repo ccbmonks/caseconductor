@@ -19,7 +19,6 @@
 Manage views for suites.
 
 """
-from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 
@@ -27,7 +26,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
 
 from cc import model
-
+from cc.model.ccmodel import NotDeletedCount
 from cc.view.filters import SuiteFilterSet
 from cc.view.lists import decorators as lists
 from cc.view.utils.ajax import ajax
@@ -54,7 +53,7 @@ def suites_list(request):
         "manage/suite/suites.html",
         {
             "suites": model.Suite.objects.select_related().annotate(
-                case_count=Count("cases")),
+                case_count=NotDeletedCount("cases", distinct=True)),
             }
         )
 
@@ -80,8 +79,8 @@ def suite_add(request):
     """Add a suite."""
     if request.method == "POST":
         form = forms.AddSuiteForm(request.POST, user=request.user)
-        if form.is_valid():
-            suite = form.save()
+        suite = form.save_if_valid()
+        if suite is not None:
             messages.success(
                 request, "Suite '{0}' added.".format(
                     suite.name)
@@ -107,9 +106,9 @@ def suite_edit(request, suite_id):
     if request.method == "POST":
         form = forms.EditSuiteForm(
             request.POST, instance=suite, user=request.user)
-        if form.is_valid():
-            suite = form.save()
-            messages.success(request, "Saved '{0}'.".format(suite.name))
+        saved_suite = form.save_if_valid()
+        if saved_suite is not None:
+            messages.success(request, "Saved '{0}'.".format(saved_suite.name))
             return redirect("manage_suites")
     else:
         form = forms.EditSuiteForm(

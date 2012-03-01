@@ -36,9 +36,9 @@ class EditRunFormTest(case.DBTestCase):
 
     def test_edit_run(self):
         """Can edit run, including productversion, with modified-by."""
-        pv = self.F.ProductVersionFactory()
-        r = self.F.RunFactory(productversion__product=pv.product)
-        u = self.F.UserFactory()
+        pv = self.F.ProductVersionFactory.create()
+        r = self.F.RunFactory.create(productversion__product=pv.product)
+        u = self.F.UserFactory.create()
 
         f = self.form(
             {
@@ -47,6 +47,7 @@ class EditRunFormTest(case.DBTestCase):
                 "description": "new desc",
                 "start": "1/3/2012",
                 "end": "1/10/2012",
+                "cc_version": str(r.cc_version),
                 },
             instance=r,
             user=u)
@@ -59,6 +60,55 @@ class EditRunFormTest(case.DBTestCase):
         self.assertEqual(run.start, date(2012, 1, 3))
         self.assertEqual(run.end, date(2012, 1, 10))
         self.assertEqual(run.modified_by, u)
+
+
+    def test_add_suites(self):
+        """Can add suites to a run."""
+        pv = self.F.ProductVersionFactory.create()
+        r = self.F.RunFactory.create(productversion__product=pv.product)
+        s = self.F.SuiteFactory.create(product=pv.product)
+
+        f = self.form(
+            {
+                "productversion": str(pv.id),
+                "name": r.name,
+                "description": r.description,
+                "start": r.start.strftime("%m/%d/%Y"),
+                "end": "",
+                "suites": [str(s.id)],
+                "cc_version": str(r.cc_version),
+                },
+            instance=r,
+            )
+
+        run = f.save()
+
+        self.assertEqual(set(run.suites.all()), set([s]))
+
+
+    def test_edit_suites(self):
+        """Can edit suites in a run."""
+        pv = self.F.ProductVersionFactory.create()
+        r = self.F.RunFactory.create(productversion__product=pv.product)
+        self.F.RunSuiteFactory.create(run=r)
+        s = self.F.SuiteFactory.create(product=pv.product)
+
+        f = self.form(
+            {
+                "productversion": str(pv.id),
+                "name": r.name,
+                "description": r.description,
+                "start": r.start.strftime("%m/%d/%Y"),
+                "end": "",
+                "suites": [str(s.id)],
+                "cc_version": str(r.cc_version),
+                },
+            instance=r,
+            )
+
+        run = f.save()
+
+        self.assertEqual(set(run.suites.all()), set([s]))
 
 
     def test_no_change_product_option(self):
@@ -85,6 +135,7 @@ class EditRunFormTest(case.DBTestCase):
                 "description": "new desc",
                 "start": "1/3/2012",
                 "end": "1/10/2012",
+                "cc_version": str(r.cc_version),
                 },
             instance=r,
             )
@@ -134,6 +185,7 @@ class EditRunFormTest(case.DBTestCase):
                 "description": "new desc",
                 "start": "1/3/2012",
                 "end": "1/10/2012",
+                "cc_version": str(r.cc_version),
                 },
             instance=r,
             )
@@ -168,6 +220,7 @@ class AddRunFormTest(case.DBTestCase):
                 "description": "foo desc",
                 "start": "1/3/2012",
                 "end": "1/10/2012",
+                "cc_version": "0",
                 },
             user=u
             )
@@ -180,3 +233,25 @@ class AddRunFormTest(case.DBTestCase):
         self.assertEqual(run.start, date(2012, 1, 3))
         self.assertEqual(run.end, date(2012, 1, 10))
         self.assertEqual(run.created_by, u)
+
+
+    def test_add_run_withsuites(self):
+        """Can add suites to a new run."""
+        pv = self.F.ProductVersionFactory.create()
+        s = self.F.SuiteFactory.create(product=pv.product)
+
+        f = self.form(
+            {
+                "productversion": str(pv.id),
+                "name": "some name",
+                "description": "some desc",
+                "start": "1/3/2012",
+                "end": "",
+                "suites": [str(s.id)],
+                "cc_version": "0",
+                },
+            )
+
+        run = f.save()
+
+        self.assertEqual(set(run.suites.all()), set([s]))

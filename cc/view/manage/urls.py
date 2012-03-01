@@ -150,12 +150,12 @@ urlpatterns = patterns(
         name="manage_case_add_bulk"),
 
     # edit
-    url(r"^case/version/(?P<caseversion_id>\d+)/$",
+    url(r"^caseversion/(?P<caseversion_id>\d+)/$",
         "cases.views.caseversion_edit",
         name="manage_caseversion_edit"),
 
     # new version
-    url(r"^case/version/(?P<caseversion_id>\d+)/clone/$",
+    url(r"^caseversion/(?P<caseversion_id>\d+)/clone/$",
         "cases.views.caseversion_clone",
         name="manage_caseversion_clone"),
 
@@ -164,11 +164,6 @@ urlpatterns = patterns(
     url(r"^tags/$",
         "tags.views.tags_list",
         name="manage_tags"),
-
-    # ajax details
-    url(r"^tags/_detail/(?P<tag_id>\d+)/$",
-        "tags.views.tag_details",
-        name="manage_tag_details"),
 
     # add
     url(r"^tag/add/$",
@@ -184,4 +179,40 @@ urlpatterns = patterns(
     url(r"^tags/_autocomplete/",
         "tags.views.tag_autocomplete",
         name="manage_tags_autocomplete"),
+
+    # environments -----------------------------------------------------------
+    # manage
+    url(r"^profiles/$",
+        "environments.views.profiles_list",
+        name="manage_profiles"),
+
+    # ajax details
+    url(r"^profiles/_detail/(?P<profile_id>\d+)/$",
+        "environments.views.profile_details",
+        name="manage_profile_details"),
+
+    # add
+    url(r"^profile/add/$",
+        "environments.views.profile_add",
+        name="manage_profile_add"),
+
+    # edit
+    url(r"^profile/(?P<profile_id>\d+)/$",
+        "environments.views.profile_edit",
+        name="manage_profile_edit"),
+
+    # edit productversion environments
+    url(r"^productversion/(?P<productversion_id>\d+)/environments/$",
+        "environments.views.productversion_environments_edit",
+        name="manage_productversion_environments"),
+
+    # narrow run or caseversion environments
+    url(r"^(?P<object_type>run|caseversion)/(?P<object_id>\d+)/environments/$",
+        "environments.views.narrow_environments",
+        name="manage_narrow_environments"),
+
+    # autocomplete
+    url(r"^elements/_autocomplete/$",
+        "environments.views.element_autocomplete",
+        name="manage_environment_autocomplete_elements")
 )

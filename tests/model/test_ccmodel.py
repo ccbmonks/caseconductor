@@ -16,12 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Case Conductor.  If not, see <http://www.gnu.org/licenses/>.
 """
-Tests for ``CCModel`` (and by extension ``CCManager``,
-``NotDeletedCCManager``, and ``CCQuerySet``).
+Tests for ``CCModel`` and related classes.
 
-These tests use the ``Product`` model (and ``Suite`` for cascade-delete
-tests), as its a simple model inherited from ``CCModel``, and this
-avoids the need for a test-only model.
+These tests use the ``Product`` model (and ``Suite`` for cascade-delete tests),
+as its a simple model inherited from ``CCModel``, and this avoids the need for
+a test-only model.
 
 """
 import datetime
@@ -338,6 +337,27 @@ class DeleteTest(CCModelMockNowTestCase):
         p.delete()
 
         self.assertEqual(self.refresh(p).deleted_on, self.utcnow)
+
+
+
+class HardDeleteTest(case.DBTestCase):
+    """Tests for deletion with permanent=True."""
+    def test_instance(self):
+        """Can hard-delete an instance with permanent=True."""
+        p = self.F.ProductFactory.create()
+
+        p.delete(permanent=True)
+
+        self.assertEqual(self.model.Product._base_manager.count(), 0)
+
+
+    def test_queryset(self):
+        """Can hard-delete a queryset with permanent=True."""
+        self.F.ProductFactory.create()
+
+        self.model.Product.objects.all().delete(permanent=True)
+
+        self.assertEqual(self.model.Product._base_manager.count(), 0)
 
 
 
@@ -664,3 +684,79 @@ class DraftStatusModelTest(case.DBTestCase):
         r.deactivate(user=u)
 
         self.assertEqual(self.refresh(r).modified_by, u)
+
+
+
+class NotDeletedCountTest(case.DBTestCase):
+    """Tests for NotDeletedCount aggregate."""
+    @property
+    def NotDeletedCount(self):
+        """The aggregate class under test."""
+        from cc.model.ccmodel import NotDeletedCount
+        return NotDeletedCount
+
+
+    def test_counts_not_deleted(self):
+        """Counts only not-deleted related objects."""
+        pv = self.F.ProductVersionFactory.create()
+        self.F.ProductVersionFactory.create(product=pv.product)
+        pv.delete()
+
+        p = self.model.Product.objects.annotate(
+            num_versions=self.NotDeletedCount("versions")).get()
+
+        self.assertEqual(p.num_versions, 1)
+
+
+    def test_aggregate_annotation(self):
+        """
+        Works when aggregating over an annotation.
+
+        This is a bit of an artificially-constructed test in order to cover a
+        certain edge case in the aggregation code.
+
+        """
+        from django.db.models import Count
+
+        pv1 = self.F.ProductVersionFactory.create()
+        self.F.ProductVersionFactory.create()
+        pv1.product.delete()
+
+        # In this case we are intentionally selecting all products, and
+        # counting all versions (even deleted ones) in the initial num_versions
+        # annotation. What we want to test is that the final aggregation counts
+        # only not-deleted products.
+        res = self.model.Product.everything.annotate(
+            num_versions=Count("versions")).aggregate(
+            products_with_versions=self.NotDeletedCount("num_versions"))
+
+        self.assertEqual(res, {"products_with_versions": 1})
+
+
+
+class OptimisticLockingTest(case.DBTestCase):
+    """Test optimistic locking to avoid silent overwrite on concurrent edits."""
+    def test_concurrency_error(self):
+        """Save raises ConcurrencyError if version does not match the DB."""
+        p = self.F.ProductFactory()
+
+        p2 = self.model.Product.objects.get()
+        p2.name = "Name One"
+        p2.save()
+
+        p.name = "Name Two"
+
+        with self.assertRaises(self.model.ConcurrencyError):
+            p.save()
+
+
+    def test_queryset_update_increments_version(self):
+        """Update via queryset increments version in database, not just save."""
+        p = self.F.ProductFactory()
+
+        self.model.Product.objects.update(name="Name One")
+
+        p.name = "Name Two"
+
+        with self.assertRaises(self.model.ConcurrencyError):
+            p.save()

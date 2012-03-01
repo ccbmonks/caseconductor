@@ -43,18 +43,28 @@ class EditProductVersionForm(ccforms.NonFieldErrorsClassFormMixin,
 
 class AddProductVersionForm(EditProductVersionForm):
     """Form for adding a productversion."""
+    product = ccforms.CCModelChoiceField(
+        queryset=model.Product.objects.all(),
+        choice_attrs=lambda p: {"data-product-id": p.id})
+    clone_envs_from = ccforms.CCModelChoiceField(
+        required=False,
+        queryset=model.ProductVersion.objects.all(),
+        choice_attrs=ccforms.product_id_attrs,
+        )
+
+
     class Meta(EditProductVersionForm.Meta):
         fields = ["product", "version", "codename"]
         widgets = EditProductVersionForm.Meta.widgets.copy()
-        widgets.update(
-            {
-                "product": forms.Select,
-                }
-            )
 
 
-    def __init__(self, *args, **kwargs):
-        """Initialize AddProductVersionForm; set product choices."""
-        super(AddProductVersionForm, self).__init__(*args, **kwargs)
+    def save(self, user=None):
+        """Save and return product version; copy envs."""
+        pv = super(AddProductVersionForm, self).save(user=user)
 
-        self.fields["product"].queryset = model.Product.objects.all()
+        clone_envs_from = self.cleaned_data.get("clone_envs_from")
+        if clone_envs_from:
+            pv.environments.add(*clone_envs_from.environments.all())
+
+        return pv
+

@@ -91,32 +91,6 @@ class TagsTest(case.view.manage.ListViewTestCase,
 
 
 
-class TagDetailTest(case.view.AuthenticatedViewTestCase):
-    """Test for tag-detail ajax view."""
-    def setUp(self):
-        """Setup for case details tests; create a tag."""
-        super(TagDetailTest, self).setUp()
-        self.tag = self.F.TagFactory.create()
-
-
-    @property
-    def url(self):
-        """Shortcut for tag detail url."""
-        return reverse(
-            "manage_tag_details", kwargs=dict(tag_id=self.tag.id))
-
-
-    def test_details_created_by(self):
-        """Details lists created_by."""
-        self.tag.created_by = self.F.UserFactory.create(username="foo_user")
-        self.tag.save()
-
-        res = self.get(headers={"X-Requested-With": "XMLHttpRequest"})
-
-        self.assertIn("foo_user", res.json["html"])
-
-
-
 class AddTagTest(case.view.FormViewTestCase):
     """Tests for add tag view."""
     form_id = "tag-add-form"
@@ -219,6 +193,18 @@ class EditTagTest(case.view.FormViewTestCase):
         res = form.submit(status=200)
 
         res.mustcontain("This field is required.")
+
+
+    def test_concurrency_error(self):
+        """Concurrency error is displayed."""
+        form = self.get_form()
+
+        self.tag.save()
+
+        form["name"] = "New"
+        res = form.submit(status=200)
+
+        res.mustcontain("Another user saved changes to this object")
 
 
 

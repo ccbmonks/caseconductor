@@ -54,7 +54,7 @@ class CaseVersionAdminTest(case.admin.AdminTestCase):
 
     def test_change_page_attachment(self):
         """CaseVersion change page includes CaseAttachment inline."""
-        a = self.F.CaseAttachmentFactory.create(attachment__name="FooBar")
+        a = self.F.CaseAttachmentFactory.create(name="FooBar")
 
         self.get(self.change_url(a.caseversion)).mustcontain("FooBar")
 
@@ -85,7 +85,7 @@ class CaseVersionAdminTest(case.admin.AdminTestCase):
             form["case"] = str(case.id)
             form["productversion"] = str(pv.id)
             form["name"] = "Some case"
-            form["environments"] = str(envs[0].id)
+            form["environments"] = [str(envs[0].id)]
             form["steps-0-number"] = "1"
             form["steps-0-instruction"] = "An instruction"
             form["steps-0-expected"] = "A result"
